@@ -1,0 +1,1 @@
+/home/ku/Dev/Rust/lay/crates/target/debug/liblay_wayland.rlib: /home/ku/Dev/Rust/lay/crates/lay-wayland/src/connection.rs /home/ku/Dev/Rust/lay/crates/lay-wayland/src/events.rs /home/ku/Dev/Rust/lay/crates/lay-wayland/src/lib.rs /home/ku/Dev/Rust/lay/crates/lay-wayland/src/request.rs /home/ku/Dev/Rust/lay/crates/lay-wayland/src/types.rs

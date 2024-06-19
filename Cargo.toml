@@ -1,0 +1,11 @@
+[package]
+name = "lay"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+lay-wayland = {path="./crates/lay-wayland"}
+
+[lints.rust]
+unused_imports = "allow"
+dead_code = "allow"

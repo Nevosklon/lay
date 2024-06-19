@@ -1,0 +1,11 @@
+
+[workspace]
+members = ["./*", "lay-wayland"]
+exclude = ["./target/Cargo.toml", "./target", "./targat/Cargo.toml"]
+resolver = "2"
+
+[workspace.dependencies]
+mio    = "1"
+rustix = {version = "0.38", features = [ "event","io_uring", "shm", "time"]}
+log    = "0.4"
+libc   = "0.2"
