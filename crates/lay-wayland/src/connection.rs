@@ -1,3 +1,4 @@
+use core::ffi;
 use log;
 use rustix::fd::{AsRawFd, FromRawFd, RawFd};
 use rustix::path::Arg;
@@ -14,8 +15,8 @@ use std::string::ParseError;
 use std::{borrow::BorrowMut, ffi::OsStr};
 
 use crate::Connection;
-use libc::statfs as statfs_t;
 use libc::statfs as statfs_f;
+use libc::{statfs as statfs_t, unsetenv};
 macro_rules! err {
     ($err:path, $($f:tt)*) => {
        match $($f)* {
@@ -30,14 +31,17 @@ pub enum ConnError {
     InvalidEnv,
     NotFound,
     InvlidFD,
+    RemoveEnv,
+    PermisionError,
 }
+
+static WAYLAND_SOCKET: &'static str = "WAYLAND_SOCKET";
 
 impl Connection {
     pub fn from_env() -> Result<Self, ConnError> {
         #[cfg(debug_assertions)]
         if let Some(socket) = env::var_os("WAYLAND_SOCKET") {
             log::warn!(target: "connection", "Attempting to connect with WAYLAND_SOCKET");
-
             let socket = err!(
                 ConnError::InvalidEnv,
                 socket
@@ -51,10 +55,11 @@ impl Connection {
                 log::error!(target: "connection", "Unable to access socket");
                 return Err(ConnError::InvlidFD);
             };
-
+            // SAFTEY: fcntl SHOULD be in most linux distrubution
             unsafe {
                 if libc::fcntl(socket, libc::F_SETFD, flags | libc::FD_CLOEXEC) == -1 {
-                    log::error!("Failed to set FD_CLOEXEC")
+                    log::error!("Failed to set FD_CLOEXEC");
+                    return Err(ConnError::PermisionError);
                 };
             }
 
@@ -94,7 +99,7 @@ impl Connection {
 
     pub fn from_file(path: impl AsRef<OsStr>) -> std::io::Result<Self> {
         let connection = UnixStream::connect(path.as_ref())?;
-        connection.set_nonblocking(true)?;
+        // connection.set_nonblocking(true)?;
 
         // SAFETY: The File is open and valid unix domain socket
         return unsafe { Ok(Self::from_fd(connection.into_raw_fd())) };
