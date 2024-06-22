@@ -27,6 +27,7 @@ pub type Wlu32 = u32;
 pub type ObjectID = u32;
 pub type NewId = u32;
 
+#[repr(C, packed)]
 pub struct Message {
     object_id: ObjectID,
     msg_len: u16,
