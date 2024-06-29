@@ -26,12 +26,14 @@ pub type Wli32 = i32;
 pub type Wlu32 = u32;
 pub type ObjectID = u32;
 pub type NewId = u32;
+pub type MsgLen = u16;
+pub type MsgOpcode = u16;
 
-#[repr(C, packed)]
+#[derive(Debug)]
 pub struct Message {
     object_id: ObjectID,
-    msg_len: u16,
-    opcode: u16,
+    len: MsgLen,
+    opcode: MsgOpcode,
 }
 
 pub struct Connection(OwnedFd);
