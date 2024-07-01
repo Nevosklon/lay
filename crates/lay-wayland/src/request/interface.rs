@@ -1,6 +1,7 @@
-use core::slice;
+use core::{fmt, slice};
 use std::{
     array,
+    fmt::{LowerHex, UpperHex},
     io::{Read, Write},
     os::unix::net::UnixStream,
 };
@@ -10,7 +11,7 @@ use rustix::{
     io::Result,
 };
 
-use crate::{Connection, Message, MsgLen, MsgOpcode, ObjectID};
+use crate::{Connection, FromWords, Message, MsgLen, MsgOpcode, ObjectID, Word};
 
 pub struct WlDisplay;
 impl WlDisplay {}
@@ -35,11 +36,9 @@ impl GetRegistry {
         Self { header, registry }
     }
     pub const fn into_array(&self) -> [u32; std::mem::size_of::<Self>() / 4] {
-        assert!(self.header.len == 12);
-        assert!(self.header.opcode == 1);
         [
             (self.header.object_id),
-            unsafe { std::mem::transmute([self.header.opcode, self.header.len]) },
+            Word::from_u16(self.header.len, self.header.opcode),
             (self.registry),
         ]
     }
@@ -64,15 +63,13 @@ impl Message {
         }
     }
     pub fn from_bytes(buffer: &[u8]) -> Option<Self> {
-        if buffer.len() < (std::mem::size_of::<u64>() / 4) {
+        if buffer.len() < std::mem::size_of::<[u32; 2]>() {
             return None;
         };
-        let object_id = unsafe { u32::from_le_bytes(*(buffer.as_ptr().cast::<[u8; 4]>())) };
-        let [opcode, len] = unsafe {
-            std::mem::transmute(u32::from_le_bytes(
-                *(buffer[4..8].as_ptr().cast::<[u8; 4]>()),
-            ))
-        };
+
+        let object_id = ObjectID::from_word(&buffer[0..4]);
+        let (len, opcode) = <(MsgLen, MsgOpcode)>::from_word(&buffer[4..8]);
+
         Some(Self {
             object_id,
             len,
@@ -82,33 +79,21 @@ impl Message {
 }
 
 #[test]
-fn send_get_registery() {
+fn word_get_registry() {
     let msg = GetRegistry::send(2);
-    let result = msg.into_array();
-    assert_eq!(msg.into_array(), [0x0000001, 0x001000C, 0x00000002]);
+    assert_eq!(msg.into_array(), [0x1, 0xC0001, 0x2]);
 }
 
 #[test]
 fn get_registry() {
-    env_logger::init();
     let conn = Connection::from_env().unwrap();
     let mut conn = unsafe { UnixStream::from_raw_fd(conn.0.as_raw_fd()) };
-    let msg = GetRegistry::send(2);
-    let send: [u8; std::mem::size_of::<u32>() * 3] =
-        unsafe { std::mem::transmute(msg.into_array()) };
-
-    let bytes = unsafe { conn.write(&send).unwrap() };
-
-    assert_eq!(bytes, std::mem::size_of::<u32>() * 3);
-    let mut buffer = [0; u8::MAX as _];
+    unsafe {
+        let msg: [u8; std::mem::size_of::<GetRegistry>()] =
+            std::mem::transmute(GetRegistry::send(2).into_array());
+        conn.write(&msg).expect("Failed to write")
+    };
+    let mut buffer = [0; 0xfff];
     let bytes = conn.read(&mut buffer).unwrap();
-    dbg!(bytes);
-    // assert!((bytes % 4) == 0);
-    buffer[0..bytes]
-        .chunks(4)
-        .filter_map(|i| i.try_into().ok())
-        .map(u32::from_le_bytes)
-        .for_each(|i| eprintln!("0x{:08X}", i));
-    dbg!(Message::from_bytes(&buffer[..bytes]));
-    eprintln!("{:?}", String::from_utf8_lossy(&buffer[8..bytes]));
+    let msg = dbg!(Message::from_bytes(&buffer[..bytes]).unwrap());
 }
