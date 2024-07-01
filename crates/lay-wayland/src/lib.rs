@@ -28,6 +28,11 @@ pub type ObjectID = u32;
 pub type NewId = u32;
 pub type MsgLen = u16;
 pub type MsgOpcode = u16;
+pub type RawWord = u32;
+
+#[derive(Debug)]
+#[repr(transparent)]
+pub(crate) struct Word(RawWord);
 
 #[derive(Debug)]
 pub struct Message {
@@ -41,4 +46,6 @@ pub struct Connection(OwnedFd);
 mod connection;
 mod events;
 mod request;
-mod types;
+mod utils;
+
+pub use crate::utils::FromWords;
