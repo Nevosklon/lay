@@ -1,6 +1,10 @@
-use std::fmt::{Debug, UpperHex};
+use std::{
+    ffi::CString,
+    fmt::{Debug, UpperHex},
+    ops::Deref,
+};
 
-use crate::{Message, RawWord, WlFixed, Word};
+use crate::{Message, Payload, RawWord, WlFixed, WlString, Word};
 
 impl WlFixed {
     pub fn from_f32(f: f32) -> Self {
@@ -82,6 +86,7 @@ impl Word {
     pub const fn from_u16(upper: u16, lower: u16) -> RawWord {
         (upper as u32) << 16 | (lower as u32)
     }
+    pub const NEXT: usize = std::mem::size_of::<RawWord>();
 }
 
 impl FromWords<&[u8]> for [u16; 2] {
@@ -123,6 +128,18 @@ impl FromWords<&u8> for u32 {
     }
 }
 
+impl WlString {
+    pub fn from_buf(header: &Message, buf: &[u8]) -> Option<Self> {
+        let payload = Payload::from_buf(&header, &buf)?;
+        let len = RawWord::from_word(&payload[..Word::NEXT]);
+
+        // TODO: Do Not assume that all string format are utf8
+        let text = String::from(String::from_utf8_lossy(&payload[Word::NEXT..len as _]));
+
+        Some(Self { text })
+    }
+}
+
 #[allow(private_bounds)]
 trait WordType {}
 
@@ -130,6 +147,30 @@ impl WordType for [u16; 2] {}
 impl WordType for (u16, u16) {}
 impl WordType for u32 {}
 impl<T> WordType for Option<T> where T: WordType {}
+
+impl Message {
+    pub const PAYLOAD_START: usize = std::mem::size_of::<Self>();
+    pub const fn payload_len(&self) -> usize {
+        self.len as usize - Self::PAYLOAD_START
+    }
+}
+
+impl<'a> Payload<'a> {
+    pub fn from_buf(header: &Message, buf: &'a [u8]) -> Option<Self> {
+        match header.payload_len() as usize > buf.len() {
+            true => None,
+            false => Some(Self(&buf[Message::PAYLOAD_START..header.len as usize])),
+        }
+    }
+}
+
+impl<'a> Deref for Payload<'a> {
+    type Target = [u8];
+
+    fn deref(&self) -> &Self::Target {
+        self.0
+    }
+}
 
 impl UpperHex for Message {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

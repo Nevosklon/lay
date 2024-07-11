@@ -11,7 +11,7 @@ use rustix::{
     io::Result,
 };
 
-use crate::{Connection, FromWords, Message, MsgLen, MsgOpcode, ObjectID, Word};
+use crate::{Connection, FromWords, Message, MsgLen, MsgOpcode, ObjectID, WlString, Word};
 
 pub struct WlDisplay;
 impl WlDisplay {}
@@ -93,7 +93,13 @@ fn get_registry() {
             std::mem::transmute(GetRegistry::send(2).into_array());
         conn.write(&msg).expect("Failed to write")
     };
-    let mut buffer = [0; 0xfff];
+    let mut buffer = [0; 128 * 2];
     let bytes = conn.read(&mut buffer).unwrap();
-    let msg = dbg!(Message::from_bytes(&buffer[..bytes]).unwrap());
+    assert_eq!(buffer.len(), bytes);
+    let msg = dbg!(Message::from_bytes(&buffer[..]).unwrap());
+
+    dbg!(WlString::from_buf(&msg, &buffer[..28]));
+    assert_eq!(msg.len, 28);
+    assert_eq!(msg.opcode, 0);
+    assert_eq!(msg.object_id, 2);
 }

@@ -1,4 +1,4 @@
-use std::{ffi::CString, ptr::NonNull};
+use std::{borrow::Cow, ffi::CString, ptr::NonNull};
 
 use rustix::fd::OwnedFd;
 
@@ -7,12 +7,14 @@ use rustix::fd::OwnedFd;
 /// wl_fixed type from wayland
 pub struct WlFixed(i32);
 
-#[repr(C)]
+// #[repr(C)]
+#[derive(Debug)]
 pub struct WlString {
-    len: u32,
-    text: CString,
-    _padding: u32,
+    // len: u32,
+    text: String,
+    // _padding: u32 Wl_string has padding 32 bit padding
 }
+
 #[repr(C)]
 pub struct WlArray {
     len: u32,
@@ -33,6 +35,10 @@ pub type RawWord = u32;
 #[derive(Debug)]
 #[repr(transparent)]
 pub(crate) struct Word(RawWord);
+
+#[derive(Debug)]
+#[repr(transparent)]
+pub(crate) struct Payload<'a>(&'a [u8]);
 
 #[derive(Debug)]
 pub struct Message {
