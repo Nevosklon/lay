@@ -11,7 +11,7 @@ use rustix::{
     io::Result,
 };
 
-use crate::{Connection, FromWords, Message, MsgLen, MsgOpcode, ObjectID, WlString, Word};
+use crate::{Connection, FromWords, Message, MsgLen, MsgOpcode, ObjectID, RawWord, WlString, Word};
 
 pub struct WlDisplay;
 impl WlDisplay {}
@@ -98,7 +98,13 @@ fn get_registry() {
     assert_eq!(buffer.len(), bytes);
     let msg = dbg!(Message::from_bytes(&buffer[..]).unwrap());
 
-    dbg!(WlString::from_buf(&msg, &buffer[..28]));
+    dbg!(RawWord::from_word(
+        &buffer[Message::PAYLOAD_START..Message::PAYLOAD_START + Word::SIZE]
+    ));
+    dbg!(WlString::from_buf(
+        &buffer[Message::PAYLOAD_START + Word::SIZE..]
+    ));
+
     assert_eq!(msg.len, 28);
     assert_eq!(msg.opcode, 0);
     assert_eq!(msg.object_id, 2);

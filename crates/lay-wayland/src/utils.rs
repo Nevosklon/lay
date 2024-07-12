@@ -86,7 +86,7 @@ impl Word {
     pub const fn from_u16(upper: u16, lower: u16) -> RawWord {
         (upper as u32) << 16 | (lower as u32)
     }
-    pub const NEXT: usize = std::mem::size_of::<RawWord>();
+    pub const SIZE: usize = std::mem::size_of::<RawWord>();
 }
 
 impl FromWords<&[u8]> for [u16; 2] {
@@ -129,14 +129,24 @@ impl FromWords<&u8> for u32 {
 }
 
 impl WlString {
-    pub fn from_buf(header: &Message, buf: &[u8]) -> Option<Self> {
-        let payload = Payload::from_buf(&header, &buf)?;
-        let len = RawWord::from_word(&payload[..Word::NEXT]);
-
+    pub fn from_buf(buf: &[u8]) -> Option<Self> {
         // TODO: Do Not assume that all string format are utf8
-        let text = String::from(String::from_utf8_lossy(&payload[Word::NEXT..len as _]));
+        // wl_string has a word size
 
+        // wl_String + null terminator
+        let len = RawWord::from_word(&buf[..Word::SIZE]) - 1;
+        let text = String::from(String::from_utf8_lossy(
+            &buf[Word::SIZE..Word::SIZE + len as usize],
+        ));
         Some(Self { text })
+    }
+
+    pub fn new(s: &str) -> Self {
+        let mut s = Self {
+            text: s.to_string(),
+        };
+        s.text.push_str("\0");
+        return s;
     }
 }
 
