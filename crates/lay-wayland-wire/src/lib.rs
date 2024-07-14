@@ -10,8 +10,8 @@ pub struct WlFixed(i32);
 
 pub trait WlType {
     type WlType<'a>;
-    fn wl_type(buffer: &[u8]) -> Option<Self::WlType<'_>>;
-    fn write(v: Self::WlType<'_>, buffer: &mut [u8]) -> Option<()>;
+    fn wl_type<'a>(buffer: &'a [u8]) -> Option<Self::WlType<'a>>;
+    fn write<'a>(v: Self::WlType<'a>, buffer: &mut [u8]) -> Option<()>;
 }
 
 pub struct WlString<'a> {
@@ -53,3 +53,8 @@ mod word;
 mod header;
 mod wl_fixed;
 mod wl_strings;
+
+trait Buffer {
+    type Buffer<'a>;
+    fn write<'a>(buffer: &'a Self::Buffer<'a>) -> usize;
+}

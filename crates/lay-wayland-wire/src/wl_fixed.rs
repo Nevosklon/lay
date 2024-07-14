@@ -19,8 +19,7 @@ impl WlFixed {
 
 /// Implement from trait
 /// Example
-/// ```
-/// crate::from!(
+/// from!(
 ///     MyType0; [f32; WlFixed::from_f32, i32; WlFixed::from_i32],
 /// );
 ///
@@ -36,7 +35,6 @@ impl WlFixed {
 ///     }
 /// }
 ///    
-/// ```
 macro_rules! from {
     ($($for: ty; [$($from: tt; $function: path),*]),*) => {
         $(
