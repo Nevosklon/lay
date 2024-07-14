@@ -68,12 +68,12 @@ impl Message {
         };
 
         let object_id = ObjectID::from_word(&buffer[0..4]);
-        let (len, opcode) = <(MsgLen, MsgOpcode)>::from_word(&buffer[4..8]);
+        let (opcode, len) = <(MsgOpcode, MsgLen)>::from_word(&buffer[4..8]);
 
         Some(Self {
             object_id,
-            len,
             opcode,
+            len,
         })
     }
 }

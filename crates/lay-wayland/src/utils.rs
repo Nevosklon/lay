@@ -67,8 +67,8 @@ impl FromWords<&[u8]> for Option<[u16; 2]> {
         #[cfg(target_endian = "little")]
         {
             return Some([
-                u16::from_le_bytes(<[u8; 2]>::try_from(&from[2..4]).ok()?),
                 u16::from_le_bytes(<[u8; 2]>::try_from(&from[0..2]).ok()?),
+                u16::from_le_bytes(<[u8; 2]>::try_from(&from[2..4]).ok()?),
             ]);
         }
 
@@ -76,8 +76,8 @@ impl FromWords<&[u8]> for Option<[u16; 2]> {
         #[cfg(target_endian = "big")]
         {
             return Some([
-                u16::from_le_bytes(<[u8; 2]>::try_from(&from[0..2]).ok()?),
                 u16::from_le_bytes(<[u8; 2]>::try_from(&from[2..4]).ok()?),
+                u16::from_le_bytes(<[u8; 2]>::try_from(&from[0..2]).ok()?),
             ]);
         }
     }

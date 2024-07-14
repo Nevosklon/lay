@@ -43,8 +43,8 @@ pub(crate) struct Payload<'a>(&'a [u8]);
 #[derive(Debug)]
 pub struct Message {
     object_id: ObjectID,
-    len: MsgLen,
     opcode: MsgOpcode,
+    len: MsgLen,
 }
 
 pub struct Connection(OwnedFd);
