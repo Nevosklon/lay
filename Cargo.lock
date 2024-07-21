@@ -128,6 +128,10 @@ name = "lay"
 version = "0.1.0"
 dependencies = [
  "lay-wayland",
+ "lay-wayland-core",
+ "lay-wayland-generate",
+ "lay-wayland-scanner",
+ "lay-wayland-wire",
 ]
 
 [[package]]
@@ -140,6 +144,22 @@ dependencies = [
  "mio",
  "rustix",
 ]
+
+[[package]]
+name = "lay-wayland-core"
+version = "0.1.0"
+
+[[package]]
+name = "lay-wayland-generate"
+version = "0.1.0"
+
+[[package]]
+name = "lay-wayland-scanner"
+version = "0.1.0"
+
+[[package]]
+name = "lay-wayland-wire"
+version = "0.1.0"
 
 [[package]]
 name = "libc"

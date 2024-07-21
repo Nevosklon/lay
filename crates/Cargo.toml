@@ -1,12 +1,19 @@
 
 [workspace]
-members = ["./*", "lay-wayland"]
-exclude = ["./target/Cargo.toml", "./target", "./targat/Cargo.toml"]
+members = ["./*", "lay-wayland", "lay-wayland-core", "lay-wayland-generate", "lay-wayland-scanner", "lay-wayland-wire"]
+exclude = ["./target/Cargo.toml", "./target"]
 resolver = "2"
 
 [workspace.dependencies]
-env_logger = "0.11"
-mio    = "1"
-rustix = {version = "0.38", features = [ "event","io_uring", "shm", "time"]}
-log    = "0.4"
-libc   = "0.2"
+env_logger           = "0.11"
+mio                  = "1"
+rustix               = {version = "0.38", features = [ "event","io_uring", "shm", "time"]}
+log                  = "0.4"
+libc                 = "0.2"
+quick-xml            = "0.36.0"
+
+lay-wayland          = {path = "./lay-wayland"}
+lay-wayland-wire     = {path = "./lay-wayland-wire"}
+lay-wayland-core     = {path = "./lay-wayland-core"}
+lay-wayland-generate = {path = "./lay-wayland-generate"}
+lay-wayland-scanner  = {path = "./lay-wayland-scanner"}

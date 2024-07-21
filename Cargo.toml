@@ -4,7 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-lay-wayland = {path="./crates/lay-wayland"}
+lay-wayland          = {path = "./crates/lay-wayland"}
+lay-wayland-wire     = {path = "./crates/lay-wayland-wire"}
+lay-wayland-core     = {path = "./crates/lay-wayland-core"}
+lay-wayland-generate = {path = "./crates/lay-wayland-generate"}
+lay-wayland-scanner  = {path = "./crates/lay-wayland-scanner"}
+
 
 [lints.rust]
 unused_imports = "allow"

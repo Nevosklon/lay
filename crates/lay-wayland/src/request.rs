@@ -1,3 +1,3 @@
-use crate::Message;
+use crate::Header;
 mod interface;
-impl Message {}
+impl Header {}

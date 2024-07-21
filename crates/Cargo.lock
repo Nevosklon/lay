@@ -135,6 +135,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "lay-wayland-core"
+version = "0.1.0"
+
+[[package]]
+name = "lay-wayland-generate"
+version = "0.1.0"
+
+[[package]]
+name = "lay-wayland-scanner"
+version = "0.1.0"
+
+[[package]]
+name = "lay-wayland-wire"
+version = "0.1.0"
+
+[[package]]
 name = "libc"
 version = "0.2.155"
 source = "registry+https://github.com/rust-lang/crates.io-index"

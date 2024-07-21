@@ -4,7 +4,7 @@ use std::{
     ops::Deref,
 };
 
-use crate::{Message, Payload, RawWord, WlFixed, WlString, Word};
+use crate::{Header, Payload, RawWord, WlFixed, WlString, Word};
 
 impl WlFixed {
     pub fn from_f32(f: f32) -> Self {
@@ -158,7 +158,7 @@ impl WordType for (u16, u16) {}
 impl WordType for u32 {}
 impl<T> WordType for Option<T> where T: WordType {}
 
-impl Message {
+impl Header {
     pub const PAYLOAD_START: usize = std::mem::size_of::<Self>();
     pub const fn payload_len(&self) -> usize {
         self.len as usize - Self::PAYLOAD_START
@@ -166,10 +166,10 @@ impl Message {
 }
 
 impl<'a> Payload<'a> {
-    pub fn from_buf(header: &Message, buf: &'a [u8]) -> Option<Self> {
+    pub fn from_buf(header: &Header, buf: &'a [u8]) -> Option<Self> {
         match header.payload_len() as usize > buf.len() {
             true => None,
-            false => Some(Self(&buf[Message::PAYLOAD_START..header.len as usize])),
+            false => Some(Self(&buf[Header::PAYLOAD_START..header.len as usize])),
         }
     }
 }
@@ -182,7 +182,7 @@ impl<'a> Deref for Payload<'a> {
     }
 }
 
-impl UpperHex for Message {
+impl UpperHex for Header {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,

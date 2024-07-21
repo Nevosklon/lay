@@ -41,7 +41,7 @@ pub(crate) struct Word(RawWord);
 pub(crate) struct Payload<'a>(&'a [u8]);
 
 #[derive(Debug)]
-pub struct Message {
+pub struct Header {
     object_id: ObjectID,
     opcode: MsgOpcode,
     len: MsgLen,

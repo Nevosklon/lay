@@ -11,7 +11,7 @@ use rustix::{
     io::Result,
 };
 
-use crate::{Connection, FromWords, Message, MsgLen, MsgOpcode, ObjectID, RawWord, WlString, Word};
+use crate::{Connection, FromWords, Header, MsgLen, MsgOpcode, ObjectID, RawWord, WlString, Word};
 
 pub struct WlDisplay;
 impl WlDisplay {}
@@ -22,7 +22,7 @@ trait Request {
 }
 
 pub struct GetRegistry {
-    header: Message,
+    header: Header,
     // rest of the arguments ....
     registry: ObjectID,
 }
@@ -32,7 +32,7 @@ const WL_DISIPLAY_ID: ObjectID = 1;
 impl GetRegistry {
     const OPCODE: MsgOpcode = 1;
     fn send(registry: ObjectID) -> Self {
-        let header = Message::new::<Self>(WL_DISIPLAY_ID, Self::OPCODE);
+        let header = Header::new::<Self>(WL_DISIPLAY_ID, Self::OPCODE);
         Self { header, registry }
     }
     pub const fn into_array(&self) -> [u32; std::mem::size_of::<Self>() / 4] {
@@ -44,12 +44,12 @@ impl GetRegistry {
     }
 }
 
-impl Message {
+impl Header {
     pub const fn new<T>(object_id: ObjectID, opcode: MsgOpcode) -> Self {
         const { assert!(std::mem::size_of::<Self>() == 8) };
         let msg_len = std::mem::size_of::<T>() as MsgLen;
         const {
-            let size: usize = std::mem::size_of::<T>() - std::mem::size_of::<Message>();
+            let size: usize = std::mem::size_of::<T>() - std::mem::size_of::<Header>();
             assert!(size > 0, "Message length must be larger than 0");
             assert!(
                 size < (u16::MAX as usize),
@@ -96,15 +96,19 @@ fn get_registry() {
     let mut buffer = [0; 128 * 2];
     let bytes = conn.read(&mut buffer).unwrap();
     assert_eq!(buffer.len(), bytes);
-    let msg = dbg!(Message::from_bytes(&buffer[..]).unwrap());
+    let msg = dbg!(Header::from_bytes(&buffer[..]).unwrap());
 
     dbg!(RawWord::from_word(
-        &buffer[Message::PAYLOAD_START..Message::PAYLOAD_START + Word::SIZE]
+        &buffer[Header::PAYLOAD_START..Header::PAYLOAD_START + Word::SIZE]
     ));
     dbg!(WlString::from_buf(
-        &buffer[Message::PAYLOAD_START + Word::SIZE..]
+        &buffer[Header::PAYLOAD_START + Word::SIZE..]
     ));
 
+    println!(
+        "{:?}",
+        String::from_utf8_lossy(&buffer[Header::PAYLOAD_START + Word::SIZE..])
+    );
     assert_eq!(msg.len, 28);
     assert_eq!(msg.opcode, 0);
     assert_eq!(msg.object_id, 2);
