@@ -4,7 +4,7 @@ use std::{
 };
 
 use crate::WlType;
-use crate::{word, WlString, Word};
+use crate::{word, WlStr, Word};
 use core::cmp::max;
 
 const NULL_TERMINATOR: u32 = 1;
@@ -12,7 +12,7 @@ enum WlStringError {
     MalformedString = 0,
 }
 
-impl<'a> WlString<'a> {
+impl<'a> WlStr<'a> {
     const PADDING: u32 = 4;
     const LEN: usize = 4;
 
@@ -68,7 +68,7 @@ impl<'a> WlString<'a> {
     }
 }
 
-impl core::cmp::PartialEq<str> for WlString<'_> {
+impl core::cmp::PartialEq<str> for WlStr<'_> {
     fn eq(&self, other: &str) -> bool {
         if other.len() as u32 != self.len {
             return false;
@@ -76,7 +76,7 @@ impl core::cmp::PartialEq<str> for WlString<'_> {
         other.as_bytes().eq(&self.content[..(self.len as usize)])
     }
 }
-impl core::cmp::PartialEq<String> for WlString<'_> {
+impl core::cmp::PartialEq<String> for WlStr<'_> {
     fn eq(&self, other: &String) -> bool {
         if other.len() as u32 != self.len {
             return false;
@@ -84,8 +84,8 @@ impl core::cmp::PartialEq<String> for WlString<'_> {
         other.as_bytes().eq(&self.content[0..(self.len as usize)])
     }
 }
-impl core::cmp::PartialEq<WlString<'_>> for str {
-    fn eq(&self, wl_str: &WlString) -> bool {
+impl core::cmp::PartialEq<WlStr<'_>> for str {
+    fn eq(&self, wl_str: &WlStr) -> bool {
         if self.len() as u32 != wl_str.len {
             return false;
         };
@@ -93,8 +93,8 @@ impl core::cmp::PartialEq<WlString<'_>> for str {
             .eq(&wl_str.content[0..(wl_str.len as usize)])
     }
 }
-impl core::cmp::PartialEq<WlString<'_>> for String {
-    fn eq(&self, wl_str: &WlString) -> bool {
+impl core::cmp::PartialEq<WlStr<'_>> for String {
+    fn eq(&self, wl_str: &WlStr) -> bool {
         if self.len() as u32 != wl_str.len {
             return false;
         };
@@ -102,7 +102,7 @@ impl core::cmp::PartialEq<WlString<'_>> for String {
             .eq(&wl_str.content[0..(wl_str.len as usize)])
     }
 }
-impl core::fmt::Debug for WlString<'_> {
+impl core::fmt::Debug for WlStr<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", String::from_utf8_lossy(self.content.as_ref()))
     }

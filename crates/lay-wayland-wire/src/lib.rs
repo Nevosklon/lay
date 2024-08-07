@@ -14,7 +14,7 @@ pub trait WlType {
     fn write<'a>(v: Self::WlType<'a>, buffer: &mut [u8]) -> Option<()>;
 }
 
-pub struct WlString<'a> {
+pub struct WlStr<'a> {
     /// the str length excluding the null terminator
     len: u32,
     content: Cow<'a, [u8]>,
@@ -54,7 +54,31 @@ mod header;
 mod wl_fixed;
 mod wl_strings;
 
-trait Buffer {
-    type Buffer<'a>;
-    fn write<'a>(buffer: &'a Self::Buffer<'a>) -> usize;
+use std::future::Future;
+use std::process::Output;
+
+// The wayland will use actor model
+pub trait Runtime {
+    type Error;
+    type Buffer;
+
+    /// Blocking constructor of the reactor
+    fn connect() -> Option<Self::Buffer>;
+
+    /// Blocking variant of channels sending
+    fn send() -> Option<Self::Error>;
+    /// Blocking variant of channels recv
+    fn recv() -> Option<Self::Error>;
+
+    fn read(buffer: &Self::Buffer) -> usize;
+
+    /// async constructor of the reactor
+    fn connecting() -> impl Future<Output = Option<Self::Buffer>> + Send;
+
+    /// async variant of channels sending
+    fn sending() -> impl Future<Output = Option<Self::Error>> + Send;
+    /// async variant of channels recv
+    fn recving() -> impl Future<Output = Option<Self::Error>> + Send;
+
+    fn reading(buffer: &Self::Buffer) -> impl Future<Output = Option<Self::Error>> + Send;
 }
