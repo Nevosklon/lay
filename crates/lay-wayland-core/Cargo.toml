@@ -4,3 +4,13 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+env_logger = {workspace = true}
+log        = {workspace = true}
+io-uring   = {workspace = true}
+libc       = {workspace = true}
+rustix     = {workspace = true}
+
+lay-wayland-wire = {workspace = true}
+
+[lints.rust]
+dead_code = "allow"

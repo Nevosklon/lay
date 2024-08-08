@@ -7,6 +7,7 @@ resolver = "2"
 [workspace.dependencies]
 env_logger           = "0.11"
 mio                  = "1"
+io-uring             = "0.6.4"
 rustix               = {version = "0.38", features = [ "event","io_uring", "shm", "time"]}
 log                  = "0.4"
 libc                 = "0.2"
