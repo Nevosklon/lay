@@ -19,40 +19,17 @@ pub struct DefaultRuntime {
 
 // The wayland will use actor model
 pub trait Runtime {
-    type Error;
-    type Buffer;
-    type Handle<'a>: RuntimeHandle;
+    type NotifyResult;
+    type RequestResult;
 
     const BLOCKING: bool = true;
     const ASYNC: bool = false;
 
-    /// Blocking constructor of the reactor
-    fn connect_env() -> Option<Self::Buffer>;
-
-    fn read(buffer: &Self::Buffer) -> usize;
-
-    /// async constructor of the reactor
-    fn connecting() -> impl Future<Output = Option<Self::Buffer>> + Send;
-
-    fn reading(buffer: &Self::Buffer) -> impl Future<Output = Option<Self::Error>> + Send;
-
-    fn handle<'a>(&self) -> Self::Handle<'a>;
-}
-
-pub trait RuntimeHandle {
-    type Runtime: Runtime;
-
-    /// Blocking variant of channels sending
-    fn request(&mut self, request: impl Request);
-
-    /// Blocking variant of channels recv
-    fn event(&mut self, event: impl Interface);
-
-    /// async variant of channels sending
-    fn requesting(&self, request: impl Request) -> impl Future<Output = ()>;
-
-    /// async variant of channels recv
-    fn eventing(&self, event: impl Interface) -> impl Future<Output = ()>;
+    // notify has occured event
+    fn notifing(&self, event: &impl Interface) -> impl Future<Output = Self::NotifyResult>;
+    fn requesting(&self, request: &impl Request) -> impl Future<Output = Self::RequestResult>;
+    fn notify(&self, event: &impl Interface) -> Self::NotifyResult;
+    fn request(&self, request: &impl Request) -> Self::RequestResult;
 }
 
 pub mod uring;
@@ -78,6 +55,12 @@ impl Bytes for [u8] {}
 impl<'a> Bytes for IoSlice<'a> {}
 impl<'a> Bytes for IoSliceMut<'a> {}
 
+impl Bytes for &Vec<u8> {}
+impl Bytes for &VecDeque<u8> {}
+impl Bytes for &[u8] {}
+impl<'a> Bytes for &'a IoSlice<'a> {}
+impl<'a> Bytes for &'a IoSliceMut<'a> {}
+
 pub trait Request: Sized {
     type Interface: Interface;
 
@@ -87,8 +70,6 @@ pub trait Request: Sized {
 
     fn as_bytes(&self) -> &Self::Bytes;
     fn into_bytes(&self) -> Self::Bytes;
-    fn request(&self, runtime: &impl RuntimeHandle);
-    fn requesting(&self, runtime: &impl RuntimeHandle) -> impl Future<Output = ()>;
 }
 
 #[macro_export]
