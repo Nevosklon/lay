@@ -1,3 +1,4 @@
+use core::panicking::panic;
 use std::{
     env,
     ffi::OsStr,
@@ -6,7 +7,7 @@ use std::{
     path::Path,
 };
 
-use crate::{DefaultRuntime, Runtime};
+use crate::{Driver, SingleRuntime};
 use rustix::{
     self,
     fd::{AsFd, AsRawFd, RawFd},
@@ -24,7 +25,7 @@ pub enum ConnError {
     IoError { errno: Errno },
 }
 
-impl DefaultRuntime {
+impl SingleRuntime {
     pub fn from_env() -> Result<Self, ErrorKind> {
         #[cfg(debug_assertions)]
         if let Some(socket_fd) = env::var_os(WAYLAND_SOCKET) {
@@ -99,8 +100,38 @@ impl DefaultRuntime {
         }
     }
 }
+struct Dummy;
+
+impl Driver for SingleRuntime {
+    type SendResult = Dummy;
+    type RequestResult = Dummy;
+
+    fn sending(
+        &self,
+        event: &impl crate::Interface,
+    ) -> impl std::future::Future<Output = Self::SendResult> {
+        panic!("Future not implmentd");
+        return;
+    }
+
+    fn requesting<'a>(
+        &self,
+        request: &impl crate::Request<'a>,
+    ) -> impl std::future::Future<Output = Self::RequestResult> {
+        panic!("Future not implmentd");
+        todo!()
+    }
+
+    fn send(&self, event: &impl crate::Interface) -> Self::SendResult {
+        todo!()
+    }
+
+    fn request<'a>(&self, request: &impl crate::Request<'a>) -> Self::RequestResult {
+        todo!()
+    }
+}
 
 #[test]
 fn connection() {
-    let conn = DefaultRuntime::from_env().unwrap();
+    let conn = SingleRuntime::from_env().unwrap();
 }

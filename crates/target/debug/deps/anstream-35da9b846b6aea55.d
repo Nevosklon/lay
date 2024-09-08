@@ -1,0 +1,14 @@
+/home/ku/Dev/Rust/lay/crates/target/debug/deps/libanstream-35da9b846b6aea55.rmeta: /home/ku/.cargo/registry/src/index.crates.io-6f17d22bba15001f/anstream-0.6.15/src/lib.rs /home/ku/.cargo/registry/src/index.crates.io-6f17d22bba15001f/anstream-0.6.15/src/adapter/mod.rs /home/ku/.cargo/registry/src/index.crates.io-6f17d22bba15001f/anstream-0.6.15/src/adapter/strip.rs /home/ku/.cargo/registry/src/index.crates.io-6f17d22bba15001f/anstream-0.6.15/src/adapter/wincon.rs /home/ku/.cargo/registry/src/index.crates.io-6f17d22bba15001f/anstream-0.6.15/src/stream.rs /home/ku/.cargo/registry/src/index.crates.io-6f17d22bba15001f/anstream-0.6.15/src/buffer.rs /home/ku/.cargo/registry/src/index.crates.io-6f17d22bba15001f/anstream-0.6.15/src/macros.rs /home/ku/.cargo/registry/src/index.crates.io-6f17d22bba15001f/anstream-0.6.15/src/auto.rs /home/ku/.cargo/registry/src/index.crates.io-6f17d22bba15001f/anstream-0.6.15/src/fmt.rs /home/ku/.cargo/registry/src/index.crates.io-6f17d22bba15001f/anstream-0.6.15/src/strip.rs
+
+/home/ku/Dev/Rust/lay/crates/target/debug/deps/anstream-35da9b846b6aea55.d: /home/ku/.cargo/registry/src/index.crates.io-6f17d22bba15001f/anstream-0.6.15/src/lib.rs /home/ku/.cargo/registry/src/index.crates.io-6f17d22bba15001f/anstream-0.6.15/src/adapter/mod.rs /home/ku/.cargo/registry/src/index.crates.io-6f17d22bba15001f/anstream-0.6.15/src/adapter/strip.rs /home/ku/.cargo/registry/src/index.crates.io-6f17d22bba15001f/anstream-0.6.15/src/adapter/wincon.rs /home/ku/.cargo/registry/src/index.crates.io-6f17d22bba15001f/anstream-0.6.15/src/stream.rs /home/ku/.cargo/registry/src/index.crates.io-6f17d22bba15001f/anstream-0.6.15/src/buffer.rs /home/ku/.cargo/registry/src/index.crates.io-6f17d22bba15001f/anstream-0.6.15/src/macros.rs /home/ku/.cargo/registry/src/index.crates.io-6f17d22bba15001f/anstream-0.6.15/src/auto.rs /home/ku/.cargo/registry/src/index.crates.io-6f17d22bba15001f/anstream-0.6.15/src/fmt.rs /home/ku/.cargo/registry/src/index.crates.io-6f17d22bba15001f/anstream-0.6.15/src/strip.rs
+
+/home/ku/.cargo/registry/src/index.crates.io-6f17d22bba15001f/anstream-0.6.15/src/lib.rs:
+/home/ku/.cargo/registry/src/index.crates.io-6f17d22bba15001f/anstream-0.6.15/src/adapter/mod.rs:
+/home/ku/.cargo/registry/src/index.crates.io-6f17d22bba15001f/anstream-0.6.15/src/adapter/strip.rs:
+/home/ku/.cargo/registry/src/index.crates.io-6f17d22bba15001f/anstream-0.6.15/src/adapter/wincon.rs:
+/home/ku/.cargo/registry/src/index.crates.io-6f17d22bba15001f/anstream-0.6.15/src/stream.rs:
+/home/ku/.cargo/registry/src/index.crates.io-6f17d22bba15001f/anstream-0.6.15/src/buffer.rs:
+/home/ku/.cargo/registry/src/index.crates.io-6f17d22bba15001f/anstream-0.6.15/src/macros.rs:
+/home/ku/.cargo/registry/src/index.crates.io-6f17d22bba15001f/anstream-0.6.15/src/auto.rs:
+/home/ku/.cargo/registry/src/index.crates.io-6f17d22bba15001f/anstream-0.6.15/src/fmt.rs:
+/home/ku/.cargo/registry/src/index.crates.io-6f17d22bba15001f/anstream-0.6.15/src/strip.rs:

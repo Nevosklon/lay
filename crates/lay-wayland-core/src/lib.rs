@@ -13,23 +13,32 @@ use std::{
 use lay_wayland_wire::Header;
 
 // A Blocking event loop using io uring runtime
-pub struct DefaultRuntime {
+pub struct SingleRuntime {
     connection: OwnedFd,
 }
 
 // The wayland will use actor model
-pub trait Runtime {
-    type NotifyResult;
+pub trait Driver {
+    type SendResult;
     type RequestResult;
 
     const BLOCKING: bool = true;
     const ASYNC: bool = false;
 
     // notify has occured event
-    fn notifing(&self, event: &impl Interface) -> impl Future<Output = Self::NotifyResult>;
-    fn requesting(&self, request: &impl Request) -> impl Future<Output = Self::RequestResult>;
-    fn notify(&self, event: &impl Interface) -> Self::NotifyResult;
-    fn request(&self, request: &impl Request) -> Self::RequestResult;
+    fn sending(&self, event: &impl Interface) -> impl Future<Output = Self::SendResult>;
+    fn requesting<'a>(
+        &self,
+        request: &impl Request<'a>,
+    ) -> impl Future<Output = Self::RequestResult>;
+    fn send(&self, event: &impl Interface) -> Self::SendResult;
+    fn request<'a>(&self, request: &impl Request<'a>) -> Self::RequestResult;
+}
+
+pub trait Runtime {
+    type Drivers: Driver;
+    fn connect() -> Self::Drivers;
+    fn connecting() -> impl Future<Output = Self::Drivers>;
 }
 
 pub mod uring;
@@ -61,15 +70,15 @@ impl Bytes for &[u8] {}
 impl<'a> Bytes for &'a IoSlice<'a> {}
 impl<'a> Bytes for &'a IoSliceMut<'a> {}
 
-pub trait Request: Sized {
+pub trait Request<'a>: Sized {
     type Interface: Interface;
 
     const N: usize = size_of::<Header>() + size_of::<Self>();
     const FIXED: bool = const { Self::N > 1 };
     type Bytes: Bytes;
 
-    fn as_bytes(&self) -> &Self::Bytes;
-    fn into_bytes(&self) -> Self::Bytes;
+    fn as_bytes(&'a self) -> &'a Self::Bytes;
+    fn into_bytes(self) -> Self::Bytes;
 }
 
 #[macro_export]
