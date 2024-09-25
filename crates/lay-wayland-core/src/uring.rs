@@ -1,13 +1,16 @@
-use core::panicking::panic;
 use std::{
+    borrow::BorrowMut,
     env,
     ffi::OsStr,
-    io::{BufReader, ErrorKind},
-    os::fd::{FromRawFd, IntoRawFd, OwnedFd},
+    io::{BufReader, ErrorKind, Write},
+    os::{
+        fd::{FromRawFd, IntoRawFd, OwnedFd},
+        unix::net::UnixStream,
+    },
     path::Path,
 };
 
-use crate::{Driver, SingleRuntime};
+use crate::{Bytes, Driver, SingleRuntime};
 use rustix::{
     self,
     fd::{AsFd, AsRawFd, RawFd},
@@ -103,31 +106,29 @@ impl SingleRuntime {
 struct Dummy;
 
 impl Driver for SingleRuntime {
-    type SendResult = Dummy;
-    type RequestResult = Dummy;
+    type NotifyResult = Dummy;
+    type RequestResult = rustix::io::Result<usize>;
 
-    fn sending(
+    fn notify(&self, event: &impl crate::Interface) -> Self::NotifyResult {
+        unimplemented!();
+    }
+
+    fn request<'a>(
         &self,
-        event: &impl crate::Interface,
-    ) -> impl std::future::Future<Output = Self::SendResult> {
-        panic!("Future not implmentd");
-        return;
+        request: &'a impl crate::Request<'a, Bytes = &'a [u8]>,
+    ) -> Self::RequestResult {
+        rustix::io::write(&self.connection, request.as_bytes())
+    }
+
+    fn notifing(&self, event: &impl crate::Interface) -> impl std::future::Future<Output = Dummy> {
+        unimplemented!("Runtime doesn't support async");
     }
 
     fn requesting<'a>(
         &self,
         request: &impl crate::Request<'a>,
-    ) -> impl std::future::Future<Output = Self::RequestResult> {
-        panic!("Future not implmentd");
-        todo!()
-    }
-
-    fn send(&self, event: &impl crate::Interface) -> Self::SendResult {
-        todo!()
-    }
-
-    fn request<'a>(&self, request: &impl crate::Request<'a>) -> Self::RequestResult {
-        todo!()
+    ) -> impl std::future::Future<Output = Dummy> {
+        unimplemented!("Runtime doesn't support async");
     }
 }
 

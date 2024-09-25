@@ -19,19 +19,19 @@ pub struct SingleRuntime {
 
 // The wayland will use actor model
 pub trait Driver {
-    type SendResult;
+    type NotifyResult;
     type RequestResult;
 
     const BLOCKING: bool = true;
     const ASYNC: bool = false;
 
     // notify has occured event
-    fn sending(&self, event: &impl Interface) -> impl Future<Output = Self::SendResult>;
+    fn notifing(&self, event: &impl Interface) -> impl Future<Output = Self::NotifyResult>;
     fn requesting<'a>(
         &self,
-        request: &impl Request<'a>,
+        request: &'a impl Request<'a>,
     ) -> impl Future<Output = Self::RequestResult>;
-    fn send(&self, event: &impl Interface) -> Self::SendResult;
+    fn notify(&self, event: &impl Interface) -> Self::NotifyResult;
     fn request<'a>(&self, request: &impl Request<'a>) -> Self::RequestResult;
 }
 
@@ -71,10 +71,7 @@ impl<'a> Bytes for &'a IoSlice<'a> {}
 impl<'a> Bytes for &'a IoSliceMut<'a> {}
 
 pub trait Request<'a>: Sized {
-    type Interface: Interface;
-
     const N: usize = size_of::<Header>() + size_of::<Self>();
-    const FIXED: bool = const { Self::N > 1 };
     type Bytes: Bytes;
 
     fn as_bytes(&'a self) -> &'a Self::Bytes;
