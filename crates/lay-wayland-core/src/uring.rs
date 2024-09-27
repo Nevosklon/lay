@@ -111,12 +111,12 @@ impl Driver for SingleRuntime {
         unimplemented!();
     }
 
-    fn request<'a, R>(&self, request: R) -> Self::RequestResult
+    fn request<R>(&self, request: R) -> Self::RequestResult
     where
         R: Request,
     {
         let method = request.wire();
-        rustix::io::write(self.connection.as_fd(), method)
+        rustix::io::write(self.connection.as_fd(), &method.as_ref()[..])
     }
 }
 
@@ -127,10 +127,11 @@ fn connection() {
 struct DummyRequest([u8; 4]);
 
 impl Request for DummyRequest {
-    const SIZED_HINT: usize = size_of::<Self>();
+    const SIZEDHINT: usize = size_of::<Self>();
+    type Wire<'a> = [u8; 4];
 
-    fn wire<'a>(&'a self) -> &'a [u8] {
-        &self.0[..]
+    fn wire<'a>(self) -> Self::Wire<'a> {
+        self.0
     }
 }
 #[test]

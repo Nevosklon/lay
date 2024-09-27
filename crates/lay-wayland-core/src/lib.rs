@@ -5,8 +5,6 @@
 
 use std::{future::Future, os::fd::OwnedFd};
 
-use lay_wayland_wire::Header;
-
 // A Blocking event loop using io uring runtime
 pub struct SingleRuntime {
     connection: OwnedFd,
@@ -27,7 +25,7 @@ pub trait Driver {
     //     request: &'a impl Request<'a>,
     // ) -> impl Future<Output = Self::RequestResult>;
     fn notify(&self, event: &impl Interface) -> Self::NotifyResult;
-    fn request<'a, R>(&self, request: R) -> Self::RequestResult
+    fn request<R>(&self, request: R) -> Self::RequestResult
     where
         R: Request;
 }
@@ -46,10 +44,10 @@ pub trait Interface {
 }
 
 pub trait Request {
-    const SIZED_HINT: usize = 0;
-    fn wire<'a>(&'a self) -> &[u8];
+    const SIZEDHINT: usize = 0;
+    type Wire<'a>: AsRef<[u8]>;
+    fn wire<'a>(self) -> Self::Wire<'a>;
 }
-
 #[macro_export]
 macro_rules! err {
     ($err:path, $($f:tt)*) => {
