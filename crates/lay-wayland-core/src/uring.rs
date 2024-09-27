@@ -111,9 +111,9 @@ impl Driver for SingleRuntime {
         unimplemented!();
     }
 
-    fn request<R>(&self, request: R) -> Self::RequestResult
+    fn request<'a, R>(&self, request: R) -> Self::RequestResult
     where
-        R: Request,
+        R: Request<'a>,
     {
         let method = request.wire();
         rustix::io::write(self.connection.as_fd(), &method.as_ref()[..])
@@ -126,12 +126,20 @@ fn connection() {
 }
 struct DummyRequest([u8; 4]);
 
-impl Request for DummyRequest {
+impl<'a> Request<'a> for DummyRequest {
     const SIZEDHINT: usize = size_of::<Self>();
-    type Wire<'a> = [u8; 4];
+    type Wire = [u8; 4];
 
-    fn wire<'a>(self) -> Self::Wire<'a> {
+    fn wire(self) -> Self::Wire {
         self.0
+    }
+}
+impl<'a> Request<'a> for &'a DummyRequest {
+    const SIZEDHINT: usize = size_of::<Self>();
+    type Wire = &'a [u8; 4];
+
+    fn wire(self) -> Self::Wire {
+        &self.0
     }
 }
 #[test]
@@ -147,7 +155,7 @@ fn write_request() {
     let runtime = SingleRuntime {
         connection: fs.into(),
     };
-    runtime.request(request).unwrap();
+    runtime.request(&request).unwrap();
     let SingleRuntime { connection } = runtime;
     let fs: std::fs::File = connection.into();
     let mut buf = [0u8; size_of::<u32>()];

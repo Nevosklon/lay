@@ -25,9 +25,9 @@ pub trait Driver {
     //     request: &'a impl Request<'a>,
     // ) -> impl Future<Output = Self::RequestResult>;
     fn notify(&self, event: &impl Interface) -> Self::NotifyResult;
-    fn request<R>(&self, request: R) -> Self::RequestResult
+    fn request<'a, R>(&self, request: R) -> Self::RequestResult
     where
-        R: Request;
+        R: Request<'a>;
 }
 
 pub trait Runtime {
@@ -43,10 +43,10 @@ pub trait Interface {
     type Error;
 }
 
-pub trait Request {
+pub trait Request<'a> {
     const SIZEDHINT: usize = 0;
-    type Wire<'a>: AsRef<[u8]>;
-    fn wire<'a>(self) -> Self::Wire<'a>;
+    type Wire: AsRef<[u8]> + 'a;
+    fn wire(self) -> Self::Wire;
 }
 #[macro_export]
 macro_rules! err {
