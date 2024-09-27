@@ -1,19 +1,18 @@
 use std::{
-    borrow::BorrowMut,
     env,
     ffi::OsStr,
-    io::{BufReader, ErrorKind, Write},
-    os::{
-        fd::{FromRawFd, IntoRawFd, OwnedFd},
-        unix::net::UnixStream,
-    },
+    io::ErrorKind,
+    os::fd::{FromRawFd, IntoRawFd, OwnedFd},
     path::Path,
 };
 
-use crate::{Bytes, Driver, SingleRuntime};
+use crate::{Driver, Request, SingleRuntime};
+// use lay_wayland_wire::Runtime;
+#[allow(unused_imports)]
 use rustix::{
     self,
-    fd::{AsFd, AsRawFd, RawFd},
+    fd::AsFd,
+    fs::FileExt,
     io::{Errno, FdFlags},
     net::{AddressFamily, SocketAddrUnix, SocketFlags, SocketType},
 };
@@ -103,36 +102,55 @@ impl SingleRuntime {
         }
     }
 }
-struct Dummy;
 
 impl Driver for SingleRuntime {
-    type NotifyResult = Dummy;
+    type NotifyResult = ();
     type RequestResult = rustix::io::Result<usize>;
 
-    fn notify(&self, event: &impl crate::Interface) -> Self::NotifyResult {
+    fn notify(&self, _event: &impl crate::Interface) -> Self::NotifyResult {
         unimplemented!();
     }
 
-    fn request<'a>(
-        &self,
-        request: &'a impl crate::Request<'a, Bytes = &'a [u8]>,
-    ) -> Self::RequestResult {
-        rustix::io::write(&self.connection, request.as_bytes())
-    }
-
-    fn notifing(&self, event: &impl crate::Interface) -> impl std::future::Future<Output = Dummy> {
-        unimplemented!("Runtime doesn't support async");
-    }
-
-    fn requesting<'a>(
-        &self,
-        request: &impl crate::Request<'a>,
-    ) -> impl std::future::Future<Output = Dummy> {
-        unimplemented!("Runtime doesn't support async");
+    fn request<'a, R>(&self, request: R) -> Self::RequestResult
+    where
+        R: Request,
+    {
+        let method = request.wire();
+        rustix::io::write(self.connection.as_fd(), method)
     }
 }
 
 #[test]
 fn connection() {
     let conn = SingleRuntime::from_env().unwrap();
+}
+struct DummyRequest([u8; 4]);
+
+impl Request for DummyRequest {
+    const SIZED_HINT: usize = size_of::<Self>();
+
+    fn wire<'a>(&'a self) -> &'a [u8] {
+        &self.0[..]
+    }
+}
+#[test]
+fn write_request() {
+    let request = DummyRequest(*b"AAAA");
+    let fs = std::fs::File::options()
+        .create(true)
+        .append(true)
+        .read(true)
+        .open("DummyRequest.txt")
+        .unwrap();
+
+    let runtime = SingleRuntime {
+        connection: fs.into(),
+    };
+    runtime.request(request).unwrap();
+    let SingleRuntime { connection } = runtime;
+    let fs: std::fs::File = connection.into();
+    let mut buf = [0u8; size_of::<u32>()];
+    let readed = fs.read_at(&mut buf, 0).unwrap();
+    assert_eq!(readed, 4);
+    assert_eq!(buf, [b'A'; 4])
 }

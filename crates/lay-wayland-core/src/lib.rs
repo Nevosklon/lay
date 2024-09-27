@@ -3,12 +3,7 @@
 //! libary that contains the
 //!
 
-use std::{
-    collections::VecDeque,
-    future::Future,
-    io::{IoSlice, IoSliceMut},
-    os::fd::OwnedFd,
-};
+use std::{future::Future, os::fd::OwnedFd};
 
 use lay_wayland_wire::Header;
 
@@ -26,13 +21,15 @@ pub trait Driver {
     const ASYNC: bool = false;
 
     // notify has occured event
-    fn notifing(&self, event: &impl Interface) -> impl Future<Output = Self::NotifyResult>;
-    fn requesting<'a>(
-        &self,
-        request: &'a impl Request<'a>,
-    ) -> impl Future<Output = Self::RequestResult>;
+    // fn notifing(&self, event: &impl Interface) -> impl Future<Output = Self::NotifyResult>;
+    // fn requesting<'a>(
+    //     &self,
+    //     request: &'a impl Request<'a>,
+    // ) -> impl Future<Output = Self::RequestResult>;
     fn notify(&self, event: &impl Interface) -> Self::NotifyResult;
-    fn request<'a>(&self, request: &impl Request<'a>) -> Self::RequestResult;
+    fn request<'a, R>(&self, request: R) -> Self::RequestResult
+    where
+        R: Request;
 }
 
 pub trait Runtime {
@@ -48,34 +45,9 @@ pub trait Interface {
     type Error;
 }
 
-pub trait Bytes {
-    const FIXED: bool = false;
-    const N: usize = 0;
-}
-
-impl<const N: usize> Bytes for [u8; N] {
-    const FIXED: bool = true;
-    const N: usize = N;
-}
-
-impl Bytes for Vec<u8> {}
-impl Bytes for VecDeque<u8> {}
-impl Bytes for [u8] {}
-impl<'a> Bytes for IoSlice<'a> {}
-impl<'a> Bytes for IoSliceMut<'a> {}
-
-impl Bytes for &Vec<u8> {}
-impl Bytes for &VecDeque<u8> {}
-impl Bytes for &[u8] {}
-impl<'a> Bytes for &'a IoSlice<'a> {}
-impl<'a> Bytes for &'a IoSliceMut<'a> {}
-
-pub trait Request<'a>: Sized {
-    const N: usize = size_of::<Header>() + size_of::<Self>();
-    type Bytes: Bytes;
-
-    fn as_bytes(&'a self) -> &'a Self::Bytes;
-    fn into_bytes(self) -> Self::Bytes;
+pub trait Request {
+    const SIZED_HINT: usize = 0;
+    fn wire<'a>(&'a self) -> &[u8];
 }
 
 #[macro_export]
