@@ -30,6 +30,8 @@ pub trait Driver {
         R: Request<'a>;
 }
 
+pub trait AsyncDriver: Driver {}
+
 pub trait Runtime {
     type Drivers: Driver;
     fn connect() -> Self::Drivers;
