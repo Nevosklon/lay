@@ -45,10 +45,34 @@ pub trait Interface {
     type Error;
 }
 
-pub trait Request<'a> {
+pub struct MetaData {
+    pub is_fixed_size: bool,
+    pub multiple_request: bool,
+    pub size_hint: usize,
+}
+pub trait RequestMetaData {
+    const METADATA: MetaData;
+}
+trait WireType {}
+impl<const N: usize> WireType for [u8; N] {}
+impl<const N: usize> WireType for &[u8; N] {}
+impl WireType for &[u8] {}
+pub trait Request<'a, T>: RequestMetaData
+where
+    T: 'a,
+{
     const SIZEDHINT: usize = 0;
-    type Wire: AsRef<[u8]> + 'a;
+    const ISSIZED: bool = true;
+    type Wire: AsRef<T> + 'a;
     fn wire(self) -> Self::Wire;
+}
+pub unsafe trait RequestTransmute<'a, Request, Output>
+where
+    Request: RequestMetaData,
+    Output: 'a,
+    Request: 'a,
+{
+    fn transmute(request: Request) -> Output;
 }
 #[macro_export]
 macro_rules! err {

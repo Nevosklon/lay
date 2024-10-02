@@ -1,12 +1,16 @@
+use core::panic;
 use std::{
     env,
     ffi::OsStr,
     io::ErrorKind,
     os::fd::{FromRawFd, IntoRawFd, OwnedFd},
     path::Path,
+    process::Output,
 };
 
-use crate::{Driver, Request, SingleRuntime};
+use crate::{
+    Driver, MetaData, Request, RequestMetaData, RequestTransmute, SingleRuntime, WireType,
+};
 // use lay_wayland_wire::Runtime;
 #[allow(unused_imports)]
 use rustix::{
@@ -116,7 +120,7 @@ impl Driver for SingleRuntime {
         R: Request<'a>,
     {
         let method = request.wire();
-        rustix::io::write(self.connection.as_fd(), &method.as_ref()[..])
+        rustix::io::write(self.connection.as_fd(), &AsRef::<&[u8]>::as_ref(&method))
     }
 }
 
@@ -126,7 +130,7 @@ fn connection() {
 }
 struct DummyRequest([u8; 4]);
 
-impl<'a> Request<'a> for DummyRequest {
+impl<'a> Request<'a, &[u8]> for DummyRequest {
     const SIZEDHINT: usize = size_of::<Self>();
     type Wire = [u8; 4];
 
@@ -134,13 +138,28 @@ impl<'a> Request<'a> for DummyRequest {
         self.0
     }
 }
-impl<'a> Request<'a> for &'a DummyRequest {
-    const SIZEDHINT: usize = size_of::<Self>();
-    type Wire = &'a [u8; 4];
+// impl<'a> Request<'a> for &'a DummyRequest {
+//     const SIZEDHINT: usize = size_of::<Self>();
+//     type Wire = &'a [u8; 4];
 
-    fn wire(self) -> Self::Wire {
-        &self.0
-    }
+//     fn wire<T>(self) -> Self::Wire<T> {
+//         &self.0
+//     }
+// }
+
+impl RequestMetaData for DummyRequest {
+    const METADATA: MetaData = MetaData {
+        is_fixed_size: true,
+        multiple_request: true,
+        size_hint: size_of::<Self>(),
+    };
+}
+impl RequestMetaData for &DummyRequest {
+    const METADATA: MetaData = MetaData {
+        is_fixed_size: true,
+        multiple_request: true,
+        size_hint: size_of::<Self>(),
+    };
 }
 #[test]
 fn write_request() {
