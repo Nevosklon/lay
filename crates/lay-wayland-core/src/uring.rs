@@ -1,15 +1,14 @@
-use core::panic;
 use std::{
     env,
     ffi::OsStr,
     io::ErrorKind,
     os::fd::{FromRawFd, IntoRawFd, OwnedFd},
     path::Path,
-    process::Output,
 };
 
 use crate::{
-    Driver, MetaData, Request, RequestMetaData, RequestTransmute, SingleRuntime, WireType,
+    Driver, FormatRequest, MetaData, Request, RequestInfo, SendRequest, SingleRequest,
+    SingleRuntime,
 };
 // use lay_wayland_wire::Runtime;
 #[allow(unused_imports)]
@@ -115,12 +114,19 @@ impl Driver for SingleRuntime {
         unimplemented!();
     }
 
-    fn request<'a, R>(&self, request: R) -> Self::RequestResult
+    fn request<'a, R>(&self, request: R::Wire) -> Self::RequestResult
     where
         R: Request<'a>,
+        R::Wire: FormatRequest<SingleRequest, [u8]>,
     {
-        let method = request.wire();
-        rustix::io::write(self.connection.as_fd(), &AsRef::<&[u8]>::as_ref(&method))
+        match <R as Request>::MULTIPLE {
+            crate::RequestType::Multiple(_) => unreachable!(),
+            crate::RequestType::Single(sender) => {
+                // let x: &&[u8] = &mut request.format(sender);
+                let buf = request.format(sender);
+                return Ok(rustix::io::write(self.connection.as_fd(), &buf)?);
+            }
+        };
     }
 }
 
@@ -129,38 +135,37 @@ fn connection() {
     let conn = SingleRuntime::from_env().unwrap();
 }
 struct DummyRequest([u8; 4]);
-
-impl<'a> Request<'a, &[u8]> for DummyRequest {
-    const SIZEDHINT: usize = size_of::<Self>();
-    type Wire = [u8; 4];
-
-    fn wire(self) -> Self::Wire {
-        self.0
+impl RequestInfo<'_> for DummyRequest {
+    const METADATA: MetaData = MetaData {
+        fixed_size: false,
+        size_hint: size_of::<Self>(),
+    };
+}
+unsafe impl FormatRequest<SingleRequest, [u8; 4]> for DummyRequest {
+    fn format<'a>(&'a self, _is_multiple_request: SingleRequest) -> &'a [u8; 4] {
+        &self.0
     }
 }
-// impl<'a> Request<'a> for &'a DummyRequest {
-//     const SIZEDHINT: usize = size_of::<Self>();
-//     type Wire = &'a [u8; 4];
-
-//     fn wire<T>(self) -> Self::Wire<T> {
-//         &self.0
-//     }
-// }
-
-impl RequestMetaData for DummyRequest {
-    const METADATA: MetaData = MetaData {
-        is_fixed_size: true,
-        multiple_request: true,
-        size_hint: size_of::<Self>(),
-    };
+unsafe impl FormatRequest<SingleRequest, [u8]> for DummyRequest {
+    fn format<'a>(&'a self, _is_multiple_request: SingleRequest) -> &'a [u8] {
+        &self.0[..]
+    }
 }
-impl RequestMetaData for &DummyRequest {
-    const METADATA: MetaData = MetaData {
-        is_fixed_size: true,
-        multiple_request: true,
-        size_hint: size_of::<Self>(),
-    };
+impl<'a> Request<'a> for DummyRequest {
+    type Wire = DummyRequest;
+    const MULTIPLE: crate::RequestType = crate::RequestType::Single(SingleRequest);
 }
+impl<'a> Request<'a> for &'a DummyRequest {
+    type Wire = &'a DummyRequest;
+    const MULTIPLE: crate::RequestType = crate::RequestType::Single(SingleRequest);
+}
+
+impl<'a> RequestInfo<'a> for &DummyRequest {
+    const METADATA: MetaData = DummyRequest::METADATA;
+}
+
+impl<'a> SendRequest<'a> for DummyRequest {}
+
 #[test]
 fn write_request() {
     let request = DummyRequest(*b"AAAA");
@@ -174,7 +179,8 @@ fn write_request() {
     let runtime = SingleRuntime {
         connection: fs.into(),
     };
-    runtime.request(&request).unwrap();
+    // runtime.request(request).unwrap();
+    request.request(&runtime).unwrap();
     let SingleRuntime { connection } = runtime;
     let fs: std::fs::File = connection.into();
     let mut buf = [0u8; size_of::<u32>()];
