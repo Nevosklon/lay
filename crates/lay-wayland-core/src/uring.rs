@@ -1,9 +1,12 @@
+#![allow(unused_imports)]
 use std::{
+    borrow::{Borrow, Cow},
     env,
     ffi::OsStr,
     io::ErrorKind,
     os::fd::{FromRawFd, IntoRawFd, OwnedFd},
     path::Path,
+    ptr,
 };
 
 use crate::{
@@ -114,16 +117,15 @@ impl Driver for SingleRuntime {
         unimplemented!();
     }
 
-    fn request<'a, R>(&self, request: R::Wire) -> Self::RequestResult
+    fn request<R>(&self, request: R::Wire) -> Self::RequestResult
     where
-        R: Request<'a>,
-        R::Wire: FormatRequest<SingleRequest, [u8]>,
+        R: Request,
+        R::Wire: FormatRequest,
     {
         match <R as Request>::MULTIPLE {
             crate::RequestType::Multiple(_) => unreachable!(),
-            crate::RequestType::Single(sender) => {
-                // let x: &&[u8] = &mut request.format(sender);
-                let buf = request.format(sender);
+            crate::RequestType::Single(_sender) => {
+                let buf = request.as_bytes();
                 return Ok(rustix::io::write(self.connection.as_fd(), &buf)?);
             }
         };
@@ -134,57 +136,67 @@ impl Driver for SingleRuntime {
 fn connection() {
     let conn = SingleRuntime::from_env().unwrap();
 }
-struct DummyRequest([u8; 4]);
-impl RequestInfo<'_> for DummyRequest {
-    const METADATA: MetaData = MetaData {
-        fixed_size: false,
-        size_hint: size_of::<Self>(),
+#[cfg(test)]
+mod tmp {
+    use std::borrow::{Borrow, Cow};
+
+    use super::{
+        FormatRequest, MetaData, Request, RequestInfo, SendRequest, SingleRequest, SingleRuntime,
     };
-}
-unsafe impl FormatRequest<SingleRequest, [u8; 4]> for DummyRequest {
-    fn format<'a>(&'a self, _is_multiple_request: SingleRequest) -> &'a [u8; 4] {
-        &self.0
+    use rustix::fs::FileExt;
+
+    #[derive(Clone, Copy)]
+    #[repr(C, packed)]
+    struct DummyRequest([u8; 4]);
+    impl RequestInfo for DummyRequest {
+        const METADATA: MetaData = MetaData {
+            fixed_size: false,
+            size_hint: size_of::<Self>(),
+        };
     }
-}
-unsafe impl FormatRequest<SingleRequest, [u8]> for DummyRequest {
-    fn format<'a>(&'a self, _is_multiple_request: SingleRequest) -> &'a [u8] {
-        &self.0[..]
+    impl FormatRequest for DummyRequest {
+        fn as_bytes<'a>(&'a self) -> Cow<'a, [u8]> {
+            // SAFE: Request DummyRequest is packed struct
+            // that is contingous array of u8
+            let borrow = unsafe {
+                std::slice::from_raw_parts(self as *const Self as *const u8, size_of::<Self>())
+            };
+            return Cow::Borrowed(borrow);
+        }
     }
-}
-impl<'a> Request<'a> for DummyRequest {
-    type Wire = DummyRequest;
-    const MULTIPLE: crate::RequestType = crate::RequestType::Single(SingleRequest);
-}
-impl<'a> Request<'a> for &'a DummyRequest {
-    type Wire = &'a DummyRequest;
-    const MULTIPLE: crate::RequestType = crate::RequestType::Single(SingleRequest);
-}
+    impl Request for DummyRequest {
+        type Wire = DummyRequest;
+        const MULTIPLE: crate::RequestType = crate::RequestType::Single(SingleRequest);
+    }
 
-impl<'a> RequestInfo<'a> for &DummyRequest {
-    const METADATA: MetaData = DummyRequest::METADATA;
-}
+    impl RequestInfo for &DummyRequest {
+        const METADATA: MetaData = DummyRequest::METADATA;
+    }
 
-impl<'a> SendRequest<'a> for DummyRequest {}
+    impl SendRequest for DummyRequest {}
 
-#[test]
-fn write_request() {
-    let request = DummyRequest(*b"AAAA");
-    let fs = std::fs::File::options()
-        .create(true)
-        .append(true)
-        .read(true)
-        .open("DummyRequest.txt")
-        .unwrap();
+    #[test]
+    fn write_request() {
+        let request = DummyRequest(*b"AAAA");
+        let fs = std::fs::File::options()
+            .create(true)
+            .write(true)
+            .read(true)
+            .open("DummyRequest.txt")
+            .unwrap();
 
-    let runtime = SingleRuntime {
-        connection: fs.into(),
-    };
-    // runtime.request(request).unwrap();
-    request.request(&runtime).unwrap();
-    let SingleRuntime { connection } = runtime;
-    let fs: std::fs::File = connection.into();
-    let mut buf = [0u8; size_of::<u32>()];
-    let readed = fs.read_at(&mut buf, 0).unwrap();
-    assert_eq!(readed, 4);
-    assert_eq!(buf, [b'A'; 4])
+        let runtime = SingleRuntime {
+            connection: fs.into(),
+        };
+        // runtime.request(request).unwrap();
+        request.request(&runtime).unwrap();
+        let fmt = request.as_bytes();
+        assert_eq!(&fmt[..], &[b'A'; size_of::<DummyRequest>()]);
+        let SingleRuntime { connection } = runtime;
+        let fs: std::fs::File = connection.into();
+        let mut buf = [0u8; size_of::<u32>()];
+        let readed = fs.read_at(&mut buf, 0).unwrap();
+        assert_eq!(readed, 4);
+        assert_eq!(buf, [b'A'; 4])
+    }
 }

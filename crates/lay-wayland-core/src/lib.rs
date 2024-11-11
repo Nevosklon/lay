@@ -3,7 +3,7 @@
 //! libary that contains the
 //!
 
-use std::{future::Future, os::fd::OwnedFd};
+use std::{borrow::Cow, future::Future, os::fd::OwnedFd};
 
 // A Blocking event loop using io uring runtime
 pub struct SingleRuntime {
@@ -25,17 +25,17 @@ pub trait Driver {
     //     request: &'a impl Request<'a>,
     // ) -> impl Future<Output = Self::RequestResult>;
     fn notify(&self, event: &impl Interface) -> Self::NotifyResult;
-    fn request<'a, R>(&self, request: R::Wire) -> Self::RequestResult
+    fn request<R>(&self, request: R::Wire) -> Self::RequestResult
     where
-        R: Request<'a>,
-        R::Wire: FormatRequest<SingleRequest, [u8]>;
+        R: Request,
+        R::Wire: FormatRequest;
 }
 
-trait SendRequest<'a>
+trait SendRequest
 where
     Self: Sized,
-    Self: Request<'a, Wire = Self>,
-    Self::Wire: FormatRequest<SingleRequest, [u8]>,
+    Self: Request<Wire = Self>,
+    Self::Wire: FormatRequest,
 {
     fn request<R>(self, runtime: &R) -> R::RequestResult
     where
@@ -63,7 +63,7 @@ pub struct MetaData {
     pub fixed_size: bool,
     pub size_hint: usize,
 }
-pub trait RequestInfo<'a> {
+pub trait RequestInfo {
     const METADATA: MetaData;
 }
 pub enum RequestType {
@@ -74,28 +74,23 @@ pub enum RequestType {
 pub struct SingleRequest;
 #[derive(Clone, Copy)]
 pub struct MultipleRequest;
-pub trait Request<'a> {
+pub trait Request {
     const MULTIPLE: RequestType;
-    type Wire: RequestInfo<'a>;
-    // fn wire<'a>(self) -> Self::Wire<'a>;
+    type Wire: RequestInfo;
 }
-
-impl<'a, T, U> RequestInfo<'a> for (T, U)
+struct Request1<T: RequestInfo, U: RequestInfo>(T, U);
+impl<T, U> RequestInfo for (T, U)
 where
-    T: RequestInfo<'a>,
-    U: RequestInfo<'a>,
+    T: RequestInfo,
+    U: RequestInfo,
 {
     const METADATA: MetaData = MetaData {
         fixed_size: true,
         size_hint: T::METADATA.size_hint + U::METADATA.size_hint,
     };
 }
-pub unsafe trait FormatRequest<IsMultiRequest, Into>
-where
-    IsMultiRequest: Copy,
-    Into: ?Sized,
-{
-    fn format<'a>(&'a self, _is_multiple_request: IsMultiRequest) -> &'a Into;
+pub trait FormatRequest {
+    fn as_bytes<'a>(&'a self) -> Cow<'a, [u8]>;
 }
 
 #[macro_export]
