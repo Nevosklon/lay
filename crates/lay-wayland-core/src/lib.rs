@@ -28,14 +28,14 @@ pub trait Driver {
     fn request<R>(&self, request: R::Wire) -> Self::RequestResult
     where
         R: Request,
-        R::Wire: FormatRequest;
+        R::Wire: IntoWire;
 }
 
 trait SendRequest
 where
     Self: Sized,
     Self: Request<Wire = Self>,
-    Self::Wire: FormatRequest,
+    Self::Wire: IntoWire,
 {
     fn request<R>(self, runtime: &R) -> R::RequestResult
     where
@@ -78,7 +78,19 @@ pub trait Request {
     const MULTIPLE: RequestType;
     type Wire: RequestInfo;
 }
-struct Request1<T: RequestInfo, U: RequestInfo>(T, U);
+#[repr(C, packed)]
+struct Request1<T, U>(T, U);
+impl<T: RequestInfo, U: RequestInfo> Request1<T, U>
+where
+    T: RequestInfo,
+    U: RequestInfo,
+{
+    const METADATA: MetaData = MetaData {
+        fixed_size: true,
+        size_hint: T::METADATA.size_hint + U::METADATA.size_hint,
+    };
+}
+
 impl<T, U> RequestInfo for (T, U)
 where
     T: RequestInfo,
@@ -89,8 +101,30 @@ where
         size_hint: T::METADATA.size_hint + U::METADATA.size_hint,
     };
 }
-pub trait FormatRequest {
+pub trait IntoWire {
     fn as_bytes<'a>(&'a self) -> Cow<'a, [u8]>;
+    fn into_vec(&self) -> Vec<u8>;
+}
+impl<T: RequestInfo + IntoWire, U: RequestInfo + IntoWire> IntoWire for Request1<T, U> {
+    fn as_bytes<'a>(&'a self) -> Cow<'a, [u8]> {
+        match Self::METADATA {
+            MetaData {
+                fixed_size: true,
+                size_hint,
+            } => Cow::Borrowed(unsafe {
+                std::slice::from_raw_parts(self as *const Self as *const u8, size_hint)
+            }),
+            _ => {
+                let b1 = self.0.as_bytes();
+                Cow::Owned(vec![0u8, 0u8, 0u8])
+            }
+        }
+    }
+    fn into_vec(&self) -> Vec<u8> {
+        let mut ret = (&raw self.0).into_vec();
+        ret.extend(self.1.into_vec().iter());
+        ret
+    }
 }
 
 #[macro_export]
@@ -102,3 +136,5 @@ macro_rules! err {
        }
     };
 }
+
+// struct Request1<T, U>(T, U);

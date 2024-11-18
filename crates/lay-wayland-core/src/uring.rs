@@ -10,8 +10,7 @@ use std::{
 };
 
 use crate::{
-    Driver, FormatRequest, MetaData, Request, RequestInfo, SendRequest, SingleRequest,
-    SingleRuntime,
+    Driver, IntoWire, MetaData, Request, RequestInfo, SendRequest, SingleRequest, SingleRuntime,
 };
 // use lay_wayland_wire::Runtime;
 #[allow(unused_imports)]
@@ -120,7 +119,7 @@ impl Driver for SingleRuntime {
     fn request<R>(&self, request: R::Wire) -> Self::RequestResult
     where
         R: Request,
-        R::Wire: FormatRequest,
+        R::Wire: IntoWire,
     {
         match <R as Request>::MULTIPLE {
             crate::RequestType::Multiple(_) => unreachable!(),
@@ -141,7 +140,7 @@ mod tmp {
     use std::borrow::{Borrow, Cow};
 
     use super::{
-        FormatRequest, MetaData, Request, RequestInfo, SendRequest, SingleRequest, SingleRuntime,
+        IntoWire, MetaData, Request, RequestInfo, SendRequest, SingleRequest, SingleRuntime,
     };
     use rustix::fs::FileExt;
 
@@ -154,7 +153,7 @@ mod tmp {
             size_hint: size_of::<Self>(),
         };
     }
-    impl FormatRequest for DummyRequest {
+    impl IntoWire for DummyRequest {
         fn as_bytes<'a>(&'a self) -> Cow<'a, [u8]> {
             // SAFE: Request DummyRequest is packed struct
             // that is contingous array of u8
